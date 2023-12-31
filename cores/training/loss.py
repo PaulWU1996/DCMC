@@ -6,9 +6,11 @@ class CustomLoss(nn.Module):
     def __init__(self, weight=1.0):
         super(CustomLoss, self).__init__()
         self.weight = weight
+        self.mse = nn.MSELoss()
 
     def _euclidean_distance(self, coord1, coord2):
-        return torch.norm(coord1 - coord2)
+        self.mse = nn.MSELoss()
+        return self.mse(coord1, coord2) #torch.norm(coord1 - coord2)
 
     def _generate_costmat(self, prediction, groundtruth):
         cost_mat = torch.zeros((len(prediction), len(groundtruth)))

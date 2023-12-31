@@ -22,7 +22,7 @@ class SingleDataset(Dataset):
         for timestep in split:
             for source_id in range(config["settings"]["source_num"]):
                 feat_path = config["filesystem"]["root"] + config["filesystem"]["feat_dir"] + "/{}_{}.npy".format(timestep, source_id)
-                gt_path = config["filesystem"]["root"] + config["filesystem"]["data_dir"] + "/GT.npy" # change back to GT.npy (simulate the tracker measurement -> prediction)
+                gt_path = config["filesystem"]["root"] + config["filesystem"]["data_dir"] + "/Measurement.npy" # change back to GT.npy (simulate the tracker measurement -> prediction)
                 self._append_pairs(idx=idx, timestep=timestep, source_id=source_id, feat_path=feat_path, gt_path=gt_path)
                 idx += 1
             
@@ -61,7 +61,62 @@ class SingleDataset(Dataset):
         return feat, gt
 
 
-# class MultiDataset(Dataset):
+class MultiDataset(Dataset):
+    """
+        MultiDataset: Dataset for multi input (on multi node)
+    """
+    def __init__(
+        self,
+        config,
+        split: list
+    ):
+        super().__init__()
+
+        self.config = config
+        self.split = split
+        self.chunks = {}
+
+        idx = 0
+        for timestep in split:
+            for source_id in range(config["settings"]["source_num"]):
+                feat_path = config["filesystem"]["root"] + config["filesystem"]["feat_dir"] + "/{}_{}.npy".format(timestep, source_id)
+                gt_path = config["filesystem"]["root"] + config["filesystem"]["data_dir"] + "/Measurement.npy" # change back to GT.npy (simulate the tracker measurement -> prediction)
+                self._append_pairs(idx=idx, timestep=timestep, source_id=source_id, feat_path=feat_path, gt_path=gt_path)
+                idx += 1
+            
+
+    def _append_pairs(self, idx, timestep, source_id, feat_path, gt_path):
+        """
+            Append the pairs of the feat-gt pairs
+        {
+            'timestep': int
+            'source_id': int
+            'feat_path': str
+            'gt_path': str
+            'feat_loc': unavailable
+            'gt_loc': unavailable
+        }
+        """
+        self.chunks[idx] = {
+            'timestep': timestep,
+            'source_id': source_id,
+            'feat_path': feat_path,
+            'gt_path': gt_path,
+            'feat_loc': None,
+            'gt_loc': None
+        }
+
+
+    def __len__(self):
+        return len(self.chunks)
+
+    def __getitem__(self, idx):
+        pair = self.chunks[idx]
+        feat = np.load(pair['feat_path']).astype(np.float32)
+        feat = feat[np.newaxis, :] # add one dimension for channel (1, 512, 512)
+        gt = np.load(pair['gt_path'])[pair['timestep'], pair['source_id'],:].astype(np.float32)
+        # gt = gt
+        return feat, gt
 
 class DataModule(pl.LightningDataModule):
     def __init__(self, config):

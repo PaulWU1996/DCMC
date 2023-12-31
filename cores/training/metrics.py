@@ -3,7 +3,8 @@ import torch.nn as nn
 from scipy.optimize import linear_sum_assignment
 
 def euclidean_distance(coord1, coord2):
-    return torch.norm(coord1 - coord2)
+    mse = nn.MSELoss()
+    return mse(coord1, coord2) # torch.norm(coord1 - coord2)
 
 def generate_costmat(prediction, groundtruth):
     cost_mat = torch.zeros((len(prediction), len(groundtruth)))

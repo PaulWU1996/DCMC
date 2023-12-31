@@ -19,7 +19,7 @@ settings:
   measurement_noise: 40 # std of measurement noise
   box_size: 40 # size of bounding box
 encoder:
-  type: Conformer # Conformer or CMConformer
+  type: None # Conformer or CMConformer or None
   in_dim: 128
   ffn_dim: 256
   num_heads: 4
@@ -35,7 +35,7 @@ training:
   split: [0.8, 0.1, 0.1]
   batch_size: 64
   max_epoch: 500
-  learning_rate: 0.004
+  learning_rate: 0.0005
   threshold: 20 # threshold for distance between predicted and ground truth (in pixels)
   loss: mse
   metrics: ospa

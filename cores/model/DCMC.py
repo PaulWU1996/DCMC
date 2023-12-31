@@ -1,3 +1,5 @@
+# import sys
+# sys.path.append('/vol/research/VS-Work/PW00391/D-CMCM')
 
 from cores.model.cmconformer import Conformer, CMConformer
 
@@ -18,20 +20,24 @@ class FeatureExtractor(nn.Module):
         
         resnet = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
         resnet.conv1 = nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
-        self.resnet = nn.Sequential(*list(resnet.children())[:-1])
-        self.conv1d1 = nn.Conv1d(512, 256, kernel_size=1, stride=1, padding=0)
-        self.b1 = nn.BatchNorm1d(256)
-        self.prelu = nn.PReLU()
-        self.conv1d2 = nn.Conv1d(256, 128, kernel_size=1, stride=1, padding=0)
+        resnet.fc = nn.Linear(in_features=512, out_features=128, bias=True)
+        self.resnet = resnet
+        # self.resnet = nn.Sequential(*list(resnet.children())[:-1])
+        # self.conv1d1 = nn.Conv1d(512, 256, kernel_size=1, stride=1, padding=0)
+        # self.b1 = nn.BatchNorm1d(256)
+        # self.prelu = nn.PReLU()
+        # self.conv1d2 = nn.Conv1d(256, 128, kernel_size=1, stride=1, padding=0)
 
     def forward(self, x):
         x = self.resnet(x)
-        x = x.flatten(2)
-        x = self.conv1d1(x)
-        x = self.b1(x)
-        x = self.prelu(x)
-        x = self.conv1d2(x)
-        x = x.transpose(1, 2)
+        x = x.unsqueeze(1) # (batch_size, 1, 128) -> (batch_size, timestep=1, dim=128)
+
+        # x = x.flatten(2)
+        # x = self.conv1d1(x)
+        # x = self.b1(x)
+        # x = self.prelu(x)
+        # x = self.conv1d2(x)
+        # x = x.transpose(1, 2)
         return x 
 
 class MLP(nn.Module):
@@ -76,13 +82,16 @@ class DCMC(pl.LightningModule):
             self.encoder = Conformer(in_dim=config['encoder']['in_dim'],ffn_dim=config['encoder']['ffn_dim'],num_heads=config['encoder']['num_heads'],num_layers=config['encoder']['num_layers'],depthwise_kernel_size=config['encoder']['depthwise_kernel_size'],dropout=config['encoder']['dropout'],use_gn=config['encoder']['use_gn'],conv_first=config['encoder']['conv_first'])
         elif config['encoder']['type'] == 'CMConformer':
             self.encoder = CMConformer(in_dim=config['encoder']['in_dim'],ffn_dim=config['encoder']['ffn_dim'],num_heads=config['encoder']['num_heads'],num_layers=config['encoder']['num_layers'],depthwise_kernel_size=config['encoder']['depthwise_kernel_size'],dropout=config['encoder']['dropout'],use_gn=config['encoder']['use_gn'],conv_first=config['encoder']['conv_first'])
+        elif config['encoder']['type'] == 'None':
+            self.encoder = None
         else:
             raise NotImplementedError
         
         self.predictor = TargetPredictor(in_dim=config['encoder']['in_dim'], num_targets=config['settings']['target_num_max'])
 
         # training
-        self.loss = CustomLoss()
+        self.train_loss = nn.MSELoss()
+        self.val_loss = CustomLoss()
         self.validatation_step_outputs = {'eval_loss': [], 'total': [], 'correct': []} # [loss, total, correct]
 
 
@@ -92,13 +101,14 @@ class DCMC(pl.LightningModule):
             input: (batch_size, 1, 512, 512)
             second_input: None or (batch_size, 1, 512, 512)
         """
-        # Step 1: extract features
         x = self.extractor(input)
         if second_input is not None:
             y = self.extractor(second_input)
-            x, _ = self.encoder(input=x, second_input=y)
+            if self.encoder is not None:
+                x, _ = self.encoder(input=x, second_input=y)
         else:
-            x, _ = self.encoder(x)
+            if self.encoder is not None:
+                x, _ = self.encoder(x)
         output_loc = self.predictor(x)
         return output_loc
 
@@ -109,7 +119,7 @@ class DCMC(pl.LightningModule):
         else:
             input, second_input, target = batch #TODO: update MultiDataset and return [input, second_input, target]
         output_loc = self(input=input, second_input=second_input)
-        loss = self.loss(output_loc, target)
+        loss = self.train_loss(output_loc, target)
         self.log('train_loss', loss, prog_bar=True, logger=True)
         return loss
 
@@ -120,7 +130,7 @@ class DCMC(pl.LightningModule):
         else:
             input, second_input, target = batch #TODO: update MultiDataset and return [input, second_input, target]
         output_loc = self(input=input, second_input=second_input)
-        loss = self.loss(output_loc, target)
+        loss = self.val_loss(output_loc, target)
         correct, total = eval(output_loc, target, self.threshold)
         self.validatation_step_outputs['eval_loss'].append(loss)
         self.validatation_step_outputs['total'].append(total)
@@ -139,8 +149,8 @@ class DCMC(pl.LightningModule):
     def configure_optimizers(self):
 
         # freeze the extractor
-        for param in self.extractor.parameters():
-            param.requires_grad = False
+        # for param in self.extractor.parameters():
+        #     param.requires_grad = False
 
         optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.parameters()), lr=self.lr)
         scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=50, gamma=0.1)
@@ -154,7 +164,16 @@ class DCMC(pl.LightningModule):
     
         
 
+# input_data = torch.randn(2, 1, 512, 512)
+# extractor = FeatureExtractor()
+# output = extractor(input_data)
+# conformer = Conformer(in_dim=128,ffn_dim=256,num_heads=4,num_layers=2,depthwise_kernel_size=1,dropout=0.1)
+# cmconformer = CMConformer(in_dim=128,ffn_dim=256,num_heads=4,num_layers=2,depthwise_kernel_size=1,dropout=0.1)
+# x, _ = conformer(output)
+# predictor = TargetPredictor(in_dim=128, num_targets=3)
+# out_loc = predictor(x)
 
+# print(output.shape)
 
 
 

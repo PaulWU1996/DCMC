@@ -49,6 +49,7 @@ class MyCallback(Callback):
 
     def on_train_start(self, trainer, pl_module):
         print("Training is started!")
+        print("The model structure:\n {}".format(pl_module))
 
     def on_train_end(self, trainer, pl_module):
         print("Training is finished!")
@@ -66,7 +67,7 @@ class MyCallback(Callback):
             filename = self.ckpt_path +  '/best_model.ckpt'
             # "/best_distance: {:.4f}, best_accuracy: {:.4f}.ckpt".format(self.best_state['distance'], self.best_state['accuracy'])
             trainer.save_checkpoint(filename)
-            print("Current Best model: ( distance: {:.4f}, accuracy: {:.4f})".format(self.best_state['distance'], self.best_state['accuracy']))
+            print("\nCurrent Best model: ( distance: {:.4f}, accuracy: {:.4f})".format(self.best_state['distance'], self.best_state['accuracy']))
         else:
             self.counter += 1
             if self.counter >= self.patience:
@@ -113,6 +114,6 @@ def train(config):
         lr_finder = tuner.lr_find(model, data)
         new_lr = lr_finder.suggestion()
         model.hparams.lr = new_lr
-
+        print("New learning rate: {}".format(new_lr))
     trainer.fit(model, data)
     
