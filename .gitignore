@@ -1,0 +1,17 @@
+# Ignore datas folder
+/datas/
+
+# Ignore pyc files
+*.pyc
+
+# Ignore __pycache__ folder
+**/__pycache__/
+
+# Ignore .DS_Store file
+.DS_Store
+
+# Ignore .ckpt  file
+*.ckpt
+
+# Ignore /logs folder
+/logs/
