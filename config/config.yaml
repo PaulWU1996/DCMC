@@ -1,0 +1,44 @@
+algorithm:
+  name: myalgorithm
+  version: 1.0.0
+experiment:
+  name: myexeriment
+  id: 1
+filesystem:
+  root: /vol/research/VS-Work/PW00391/D-CMCM # abs root path of the project
+  result_dir: /results
+  data_dir: /datas
+  feat_dir: /datas/feats
+  log_dir: /logs
+settings:
+  scenario_x: 512
+  scenario_y: 512
+  duration: 1000 # time steps
+  target_num_max: 3
+  source_num: 7
+  measurement_noise: 40 # std of measurement noise
+  box_size: 40 # size of bounding box
+encoder:
+  type: Conformer # Conformer or CMConformer
+  in_dim: 128
+  ffn_dim: 256
+  num_heads: 4
+  num_layers: 2
+  depthwise_kernel_size: 31
+  dropout: 0.1
+  use_gn: False
+  conv_first: False
+training:
+  generate_data: False
+  preprocess_data: False
+  auto_lr_find: False
+  split: [0.8, 0.1, 0.1]
+  batch_size: 64
+  max_epoch: 500
+  learning_rate: 0.004
+  threshold: 20 # threshold for distance between predicted and ground truth (in pixels)
+  loss: mse
+  metrics: ospa
+  optimizer: adam
+  patience: 15
+  early_stopping_condtion: [0, 0] # [distance, accuracy]
