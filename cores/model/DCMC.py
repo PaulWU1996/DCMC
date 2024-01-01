@@ -94,6 +94,10 @@ class DCMC(pl.LightningModule):
         self.val_loss = CustomLoss()
         self.validatation_step_outputs = {'eval_loss': [], 'total': [], 'correct': []} # [loss, total, correct]
 
+        if config['training']['pretrained_state_dict'] is not None:
+            state_dict = torch.load(config['training']['pretrained_state_dict'])['state_dict']
+            self.load_pretrained_state_dict(state_dict=state_dict, control_list=config['training']['control_list'])
+
 
     def forward(self, input:torch.Tensor, second_input:torch.Tensor=None):
         """
@@ -157,6 +161,23 @@ class DCMC(pl.LightningModule):
         return [optimizer], [scheduler] 
         # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=10, verbose=True, min_lr=1e-6)
         # return {'optimizer': optimizer, 'scheduler':scheduler, 'monitor':'eval_distance'}
+
+    def load_pretrained_state_dict(self, state_dict=None, control_list=None):
+        if state_dict is not None:
+            own_state = self.state_dict()
+            for name, param in state_dict.items():
+                if name not in own_state:
+                    continue
+                if control_list is not None:
+                    if name.split('.')[0] in control_list:
+                        param = param.data
+                        own_state[name].copy_(param)
+                    else:
+                        continue
+                else:
+                    param = param.data
+                    own_state[name].copy_(param)
+
 
     
         

@@ -22,7 +22,7 @@ class SingleDataset(Dataset):
         for timestep in split:
             for source_id in range(config["settings"]["source_num"]):
                 feat_path = config["filesystem"]["root"] + config["filesystem"]["feat_dir"] + "/{}_{}.npy".format(timestep, source_id)
-                gt_path = config["filesystem"]["root"] + config["filesystem"]["data_dir"] + "/Measurement.npy" # change back to GT.npy (simulate the tracker measurement -> prediction)
+                gt_path = config["filesystem"]["root"] + config["filesystem"]["data_dir"] + "/GT.npy" # change back to GT.npy (simulate the tracker measurement -> prediction)
                 self._append_pairs(idx=idx, timestep=timestep, source_id=source_id, feat_path=feat_path, gt_path=gt_path)
                 idx += 1
             
