@@ -76,14 +76,33 @@ class MultiDataset(Dataset):
         self.split = split
         self.chunks = {}
 
+        source_list = list(range(config["settings"]["source_num"]))
+
         idx = 0
         for timestep in split:
             for source_id in range(config["settings"]["source_num"]):
                 feat_path = config["filesystem"]["root"] + config["filesystem"]["feat_dir"] + "/{}_{}.npy".format(timestep, source_id)
+                # add second input feat path
+                second_feat_path = self._get_second_input_path(timestep, source_id, source_list=[])
                 gt_path = config["filesystem"]["root"] + config["filesystem"]["data_dir"] + "/Measurement.npy" # change back to GT.npy (simulate the tracker measurement -> prediction)
                 self._append_pairs(idx=idx, timestep=timestep, source_id=source_id, feat_path=feat_path, gt_path=gt_path)
                 idx += 1
             
+    def _get_second_input_path(self, timestep, source_id, source_list):
+        """
+            Return the second input path
+            Args:
+                timestep: int
+                source_id: int
+                source_list: list
+        """
+        second_input_path = []
+        for id in source_list:
+            if id != source_id:
+                tmp_path = self.config["filesystem"]["root"] + self.config["filesystem"]["feat_dir"] + "/{}_{}.npy".format(timestep, id)
+                second_input_path.append(tmp_path)
+        return second_input_path
+
 
     def _append_pairs(self, idx, timestep, source_id, feat_path, gt_path):
         """

@@ -19,10 +19,10 @@ settings:
   measurement_noise: 80 # std of measurement noise
   box_size: 80 # size of bounding box
 encoder:
-  type: None # Conformer or CMConformer or None
+  type: CMConformer # Conformer or CMConformer or None
   in_dim: 128
   ffn_dim: 256
-  num_heads: 4
+  num_heads: 8
   num_layers: 2
   depthwise_kernel_size: 31
   dropout: 0.1
@@ -32,8 +32,8 @@ training:
   generate_data: False
   preprocess_data: False
   auto_lr_find: False
-  pretrained_state_dict: /vol/research/VS-Work/PW00391/D-CMCM/results/{0.0213}_{0.8395}.ckpt # path to pretrained state dict
-  control_list: ['predictor'] # list of modules have been pretrained: extractor, encoder, predictor
+  pretrained_state_dict: /vol/research/VS-Work/PW00391/D-CMCM/results/n80_GT_extractor_{0.0394}_{0.6210}.ckpt # path to pretrained state dict
+  control_list: ['predictor', 'predictor'] # list of modules have been pretrained: extractor, encoder, predictor
   split: [0.8, 0.1, 0.1]
   batch_size: 64
   max_epoch: 500

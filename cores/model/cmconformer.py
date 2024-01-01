@@ -368,11 +368,14 @@ class CMConformerLayer(nn.Module):
         x = self.ffn_1(input)
         x = x * 0.5 + residual
         if second_input is not None: # process the second input if it exists
-            y = self.ffn_1(second_input)
+            residual_y = second_input
+            y = self.ffn_1(second_input) 
+            y = residual_y + y * 0.5
 
         # Step 2: Attention & Convolution
         if self.conv_first:
             x = self._apply_convolution(x)
+
 
         residual = x
         # self attention
