@@ -479,11 +479,3 @@ class CMConformer(nn.Module):
                 x = layer(x, encoder_padding_mask)
         x = x.transpose(0, 1)
         return x, lengths
-
-# # Understanding the padding mask
-# lengths = torch.randint(1, 10, (4,))
-# input = torch.rand(4, int(lengths.max()), 3)
-# mask = _lengths_to_padding_mask(lengths)
-# print(mask)
-
-# mask can be None if the input length is fixed (as what we do it (only consider seperate chunks and some can be unfull))

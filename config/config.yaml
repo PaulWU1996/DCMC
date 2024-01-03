@@ -18,8 +18,10 @@ settings:
   source_num: 7
   measurement_noise: 80 # std of measurement noise
   box_size: 80 # size of bounding box
+  listener_max: 2 # max number of listeners in the scenario (ussually source_num/2)
+  listening: True # if True, the listener can hear the source otherwise just single node
 encoder:
-  type: CMConformer # Conformer or CMConformer or None
+  type: Conformer # Conformer or CMConformer or None
   in_dim: 128
   ffn_dim: 256
   num_heads: 8

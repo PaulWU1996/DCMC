@@ -84,7 +84,7 @@ def train(config):
     torch.set_float32_matmul_precision('medium')
 
     # set logger
-    wandb_logger = WandbLogger(project='DCMC', entity='', log_model=True, save_dir=config["filesystem"]["root"] + config["filesystem"]["log_dir"])
+    # wandb_logger = WandbLogger(project='DCMC', entity='', log_model=True, save_dir=config["filesystem"]["root"] + config["filesystem"]["log_dir"])
 
     # load model and data
     model = DCMC(config)
@@ -104,8 +104,8 @@ def train(config):
         max_epochs=config["training"]["max_epoch"],
         check_val_every_n_epoch=1,
         callbacks=[mycallback],
-        logger=wandb_logger,
-        # fast_dev_run=True,
+        # logger=wandb_logger,
+        fast_dev_run=True,
     )
 
     # if config["training"]["auto_lr_find"]:

@@ -22,22 +22,10 @@ class FeatureExtractor(nn.Module):
         resnet.conv1 = nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
         resnet.fc = nn.Linear(in_features=512, out_features=128, bias=True)
         self.resnet = resnet
-        # self.resnet = nn.Sequential(*list(resnet.children())[:-1])
-        # self.conv1d1 = nn.Conv1d(512, 256, kernel_size=1, stride=1, padding=0)
-        # self.b1 = nn.BatchNorm1d(256)
-        # self.prelu = nn.PReLU()
-        # self.conv1d2 = nn.Conv1d(256, 128, kernel_size=1, stride=1, padding=0)
 
     def forward(self, x):
         x = self.resnet(x)
         x = x.unsqueeze(1) # (batch_size, 1, 128) -> (batch_size, timestep=1, dim=128)
-
-        # x = x.flatten(2)
-        # x = self.conv1d1(x)
-        # x = self.b1(x)
-        # x = self.prelu(x)
-        # x = self.conv1d2(x)
-        # x = x.transpose(1, 2)
         return x 
 
 class MLP(nn.Module):
@@ -117,22 +105,40 @@ class DCMC(pl.LightningModule):
         return output_loc
 
     def training_step(self, batch, batch_idx):
-        if len(batch) == 2:
-            input, target = batch
-            second_input = None
+        if self.config['settings']['listening']:
+            [input, second_input], target = batch
+            if second_input.max().item() == 0:
+                second_input = None
         else:
-            input, second_input, target = batch #TODO: update MultiDataset and return [input, second_input, target]
+            [input, target] = batch
+            second_input = None
+
+        # if batch[1].max().item() == 0:
+        #     input, target = batch
+        #     second_input = None
+        # else:
+        #     input, second_input, target = batch #TODO: update MultiDataset and return [input, second_input, target]
+        
         output_loc = self(input=input, second_input=second_input)
         loss = self.train_loss(output_loc, target)
         self.log('train_loss', loss, prog_bar=True, logger=True)
         return loss
 
     def validation_step(self, batch, batch_idx):
-        if len(batch) == 2:
-            input, target = batch
-            second_input = None
+
+        if self.config['settings']['listening']:
+            [input, second_input], target = batch
+            if second_input.max().item() == 0:
+                second_input = None
         else:
-            input, second_input, target = batch #TODO: update MultiDataset and return [input, second_input, target]
+            [input, target] = batch
+            second_input = None
+            
+        # if len(batch) == 2:
+        #     input, target = batch
+        #     second_input = None
+        # else:
+        #     input, second_input, target = batch #TODO: update MultiDataset and return [input, second_input, target]
         output_loc = self(input=input, second_input=second_input)
         loss = self.val_loss(output_loc, target)
         correct, total = eval(output_loc, target, self.threshold)
